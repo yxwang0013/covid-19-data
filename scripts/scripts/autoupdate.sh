@@ -176,6 +176,24 @@ fi
 run_python 'import hosp; hosp.update_db()'
 
 # =====================================================================
+# UK subnational data
+
+hour=$(date +%H)
+if [ $hour == 17 ] ; then
+  # Download CSV
+  echo "Generating UK subnational export..."
+  run_python 'import uk_nations; uk_nations.generate_dataset()'
+  git add .
+  git commit -m "Automated UK subnational update"
+  git push
+fi
+
+# Always run the database update.
+# The script itself contains a check against the database
+# to make sure it doesn't run unnecessarily.
+run_python 'import uk_nations; uk_nations.update_db()'
+
+# =====================================================================
 # Google Mobility
 
 hour=$(date +%H)
