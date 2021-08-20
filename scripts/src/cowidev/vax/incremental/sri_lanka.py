@@ -27,7 +27,7 @@ regex_mapping = {
     "Sinopharm Vaccine": r"(Sinopharm Vaccine) 1st Dose ([\d,]+) 2nd Dose ([\d,]+)",
     "Sputnik V": r"(Sputnik V) 1st Dose ([\d,]+) 2nd Dose ([\d,]+)",
     "Pfizer": r"(Pfizer) 1st Dose ([\d,]+) 2nd Dose ([\d,]+)",
-    "Moderna": r"(Moderna) ([\d,]+)",
+    "Moderna": r"(Moderna) 1st Dose ([\d,]+) 2nd Dose ([\d,]+)",
 }
 
 
