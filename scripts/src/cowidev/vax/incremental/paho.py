@@ -18,13 +18,14 @@ logger = get_logger()
 
 
 COUNTRIES = {
-    "Bermuda": "Bermuda",
     "Bahamas": "Bahamas",
+    "Bermuda": "Bermuda",
     "Dominica": "Dominica",
     "Honduras": "Honduras",
     "Jamaica": "Jamaica",
-    "Venezuela": "Venezuela",
     "Nicaragua": "Nicaragua",
+    "Paraguay": "Paraguay",
+    "Venezuela": "Venezuela",
 }
 
 
@@ -65,9 +66,7 @@ class PAHO:
             self._download_csv(driver, "Crosstab", "RDT: Overview Table")
             # Load downloadded file
             filename = self._get_downloaded_filename()
-            df = pd.read_csv(
-                filename, sep="\t", encoding=get_file_encoding(filename), thousands=","
-            )
+            df = pd.read_csv(filename, sep="\t", encoding=get_file_encoding(filename), thousands=",")
             os.remove(filename)
             df = df.assign(date=self._parse_date(driver))
         return df
@@ -114,9 +113,7 @@ class PAHO:
         columns_missing = set(self.columns_mapping).difference(df.columns)
         columns_unknown = df.columns.difference(self.columns_mapping)
         if columns_missing:
-            raise ValueError(
-                f"Missing column fields: {columns_missing}. Unknown columns: {columns_unknown}"
-            )
+            raise ValueError(f"Missing column fields: {columns_missing}. Unknown columns: {columns_unknown}")
         return df
 
     def pipe_rename_columns(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -140,15 +137,11 @@ class PAHO:
 
     def pipe_vaccine(self, df: pd.DataFrame) -> pd.DataFrame:
         url = "https://covid19.who.int/who-data/vaccination-data.csv"
-        df_who = pd.read_csv(url, usecols=["ISO3", "VACCINES_USED"]).rename(
-            columns={"VACCINES_USED": "vaccine"}
-        )
+        df_who = pd.read_csv(url, usecols=["ISO3", "VACCINES_USED"]).rename(columns={"VACCINES_USED": "vaccine"})
         df_who = df_who.dropna(subset=["vaccine"])
         df_who = df_who.assign(
             vaccine=df_who.vaccine.apply(
-                lambda x: ", ".join(
-                    sorted(set(VACCINES_WHO_MAPPING[xx.strip()] for xx in x.split(",")))
-                )
+                lambda x: ", ".join(sorted(set(VACCINES_WHO_MAPPING[xx.strip()] for xx in x.split(","))))
             )
         )
         df = df.merge(df_who, left_on="country_code", right_on="ISO3")
