@@ -4,7 +4,7 @@ import pandas as pd
 
 from cowidev.vax.utils.incremental import enrich_data, increment, clean_count
 from cowidev.vax.utils.utils import get_soup
-from cowidev.vax.utils.dates import clean_date
+from cowidev.vax.utils.dates import localdate
 
 
 def read(source: str) -> pd.Series:
@@ -22,9 +22,7 @@ def connect_parse_data(source: str) -> pd.Series:
 
     total_vaccinations = people_vaccinated + people_fully_vaccinated
 
-    date = soup.find(class_="h2-blue").text
-    date = re.search(r"\w+ +\d+, +202\d", date).group(0)
-    date = str(pd.to_datetime(date).date())
+    date = localdate("America/St_Lucia")
 
     data = {
         "total_vaccinations": total_vaccinations,
