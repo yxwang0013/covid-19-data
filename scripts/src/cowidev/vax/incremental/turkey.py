@@ -12,7 +12,6 @@ METRIC_LABELS = {
     "total_vaccinations": "toplamasidozusayisi",
     "people_vaccinated": "doz1asisayisi",
     "people_fully_vaccinated": "doz2asisayisi",
-    "total_boosters": "doz3asisayisi",
 }
 
 
@@ -25,6 +24,7 @@ def parse_data(soup: BeautifulSoup) -> pd.Series:
     data = {"date": parse_date(soup)}
     for k, v in METRIC_LABELS.items():
         data[k] = parse_metric(soup, v)
+    data["total_boosters"] = data["total_vaccinations"] - data["people_vaccinated"] - data["people_fully_vaccinated"]
     return pd.Series(data=data)
 
 
