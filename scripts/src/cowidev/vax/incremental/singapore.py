@@ -12,44 +12,51 @@ from cowidev.vax.utils.dates import clean_date
 class Singapore:
     def __init__(self) -> None:
         self.location = "Singapore"
-        self.source_url = "https://www.moh.gov.sg/covid-19/vaccination"
+        self.feed_url = "https://www.moh.gov.sg/feeds/news-highlights"
+
+    def find_article(self) -> str:
+        soup = BeautifulSoup(requests.get(self.feed_url).content, "lxml")
+        for link in soup.find_all("item"):
+            elements = link.children
+            for elem in elements:
+                if "vaccination-progress" in elem:
+                    return elem
 
     def read(self) -> pd.Series:
+        self.source_url = self.find_article(self.feed_url)
         soup = get_soup(self.source_url)
-        return self._parse_data(soup)
+        return self.parse_text(soup)
 
-    def _parse_data(self, soup: BeautifulSoup) -> pd.Series:
+    def parse_text(self, soup: BeautifulSoup) -> pd.Series:
+
+        national_program = r"As of ([\d]+ [A-Za-z]+ 20\d{2}), we have administered a total of ([\d,]+) doses of COVID-19 vaccines under the national vaccination programme \(Pfizer-BioNTech Comirnaty and Moderna\), covering ([\d,]+) individuals"
+        data = re.search(national_program, soup.text).groups()
+        national_date = clean_date(data[0], fmt="%d %B %Y", lang="en_US", loc="en_US")
+        national_doses = clean_count(data[1])
+        national_people_vaccinated = clean_count(data[2])
+
+        who_eul = r"In addition, ([\d,]+) doses of other vaccines recognised in the World Health Organization’s Emergency Use Listing \(WHO EUL\) have been administered as of ([\d]+ [A-Za-z]+ 20\d{2}), covering ([\d,]+) individuals\. In total, (\d+)% of our population has completed their full regimen/ received two doses of COVID-19 vaccines, and (\d+)% has received at least one dose"
+        data = re.search(who_eul, soup.text).groups()
+        who_doses = clean_count(data[0])
+        who_date = clean_date(data[1], fmt="%d %B %Y", lang="en_US", loc="en_US")
+        who_people_vaccinated = clean_count(data[2])
+        share_fully_vaccinated = int(data[3])
+        share_vaccinated = int(data[4])
+
+        date = max([national_date, who_date])
+        total_vaccinations = national_doses + who_doses
+        people_vaccinated = national_people_vaccinated + who_people_vaccinated
+        people_fully_vaccinated = round(people_vaccinated * (share_fully_vaccinated / share_vaccinated))
+
         data = pd.Series(
             {
-                "date": self._parse_date(soup),
-                "total_vaccinations": self._parse_metric(
-                    soup, "Total Doses Administered"
-                ),
-                "people_vaccinated": self._parse_metric(
-                    soup, "Received at least First Dose"
-                ),
-                "people_fully_vaccinated": self._parse_metric(
-                    soup, "Completed Full Vaccination Regimen"
-                ),
+                "date": date,
+                "total_vaccinations": total_vaccinations,
+                "people_vaccinated": people_vaccinated,
+                "people_fully_vaccinated": people_fully_vaccinated,
             }
         )
         return data
-
-    def _parse_date(self, soup: BeautifulSoup) -> str:
-        for h3 in soup.find_all("h3"):
-            if "Vaccination Data" in h3.text:
-                break
-        date = re.search(r"as of (\d+ \w+ \d+)", h3.text).group(1)
-        date = str(pd.to_datetime(date).date())
-        return date
-
-    def _parse_metric(self, soup: BeautifulSoup, description: str) -> int:
-        value = (
-            soup.find("strong", string=description)
-            .parent.parent.parent.parent.find_all("tr")[-1]
-            .text
-        )
-        return clean_count(value)
 
     def pipe_location(self, ds: pd.Series) -> pd.Series:
         return enrich_data(ds, "location", "Singapore")
@@ -61,9 +68,7 @@ class Singapore:
         return enrich_data(ds, "source_url", self.source_url)
 
     def pipeline(self, ds: pd.Series) -> pd.Series:
-        return (
-            ds.pipe(self.pipe_location).pipe(self.pipe_source).pipe(self.pipe_vaccine)
-        )
+        return ds.pipe(self.pipe_location).pipe(self.pipe_source).pipe(self.pipe_vaccine)
 
     def to_csv(self, paths):
         data = self.read().pipe(self.pipeline)
