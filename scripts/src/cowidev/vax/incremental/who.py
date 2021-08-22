@@ -13,6 +13,7 @@ logger = get_logger()
 # Dict mapping WHO country names -> OWID country names
 COUNTRIES = {
     "Afghanistan": "Afghanistan",
+    "Algeria": "Algeria",
     "Angola": "Angola",
     "Anguilla": "Anguilla",
     "Belarus": "Belarus",
@@ -44,8 +45,8 @@ COUNTRIES = {
     "Libya": "Libya",
     "Madagascar": "Madagascar",
     "Mali": "Mali",
-    "Mauritius": "Mauritius",
     "Mauritania": "Mauritania",
+    "Mauritius": "Mauritius",
     "Montserrat": "Montserrat",
     "Mozambique": "Mozambique",
     "Myanmar": "Myanmar",
@@ -63,12 +64,13 @@ COUNTRIES = {
     "Sudan": "Sudan",
     "Syrian Arab Republic": "Syria",
     "Tajikistan": "Tajikistan",
-    "United Republic of Tanzania": "Tanzania",
     "Timor-Leste": "Timor",
     "Togo": "Togo",
     "Tunisia": "Tunisia",
     "Turkmenistan": "Turkmenistan",
     "Turks and Caicos Islands": "Turks and Caicos Islands",
+    "Uganda": "Uganda",
+    "United Republic of Tanzania": "Tanzania",
     "Yemen": "Yemen",
 }
 
@@ -83,9 +85,7 @@ class WHO:
 
     def pipe_checks(self, df: pd.DataFrame) -> pd.DataFrame:
         if len(df) > 300:
-            raise ValueError(
-                f"Check source, it may contain updates from several dates! Shape found was {df.shape}"
-            )
+            raise ValueError(f"Check source, it may contain updates from several dates! Shape found was {df.shape}")
         if df.groupby("COUNTRY").DATE_UPDATED.nunique().nunique() == 1:
             if df.groupby("COUNTRY").DATE_UPDATED.nunique().unique()[0] != 1:
                 raise ValueError("Countries have more than one date update!")
@@ -107,9 +107,7 @@ class WHO:
         mask_1 = (
             df.TOTAL_VACCINATIONS >= df.PERSONS_VACCINATED_1PLUS_DOSE
         ) | df.PERSONS_VACCINATED_1PLUS_DOSE.isnull()
-        mask_2 = (
-            df.TOTAL_VACCINATIONS >= df.PERSONS_FULLY_VACCINATED
-        ) | df.PERSONS_FULLY_VACCINATED.isnull()
+        mask_2 = (df.TOTAL_VACCINATIONS >= df.PERSONS_FULLY_VACCINATED) | df.PERSONS_FULLY_VACCINATED.isnull()
         mask_3 = (
             (df.PERSONS_VACCINATED_1PLUS_DOSE >= df.PERSONS_FULLY_VACCINATED)
             | df.PERSONS_VACCINATED_1PLUS_DOSE.isnull()
@@ -120,11 +118,7 @@ class WHO:
         return df
 
     def pipe_vaccine_checks(self, df: pd.DataFrame) -> pd.DataFrame:
-        vaccines_used = set(
-            df.VACCINES_USED.dropna()
-            .apply(lambda x: [xx.strip() for xx in x.split(",")])
-            .sum()
-        )
+        vaccines_used = set(df.VACCINES_USED.dropna().apply(lambda x: [xx.strip() for xx in x.split(",")]).sum())
         vaccines_unknown = vaccines_used.difference(VACCINES_WHO_MAPPING)
         if vaccines_unknown:
             raise ValueError(
@@ -154,9 +148,7 @@ class WHO:
 
     def pipe_calculate_metrics(self, df: pd.DataFrame) -> pd.DataFrame:
         df[["PERSONS_VACCINATED_1PLUS_DOSE", "PERSONS_FULLY_VACCINATED"]] = (
-            df[["PERSONS_VACCINATED_1PLUS_DOSE", "PERSONS_FULLY_VACCINATED"]]
-            .astype("Int64")
-            .fillna(pd.NA)
+            df[["PERSONS_VACCINATED_1PLUS_DOSE", "PERSONS_FULLY_VACCINATED"]].astype("Int64").fillna(pd.NA)
         )
         df.loc[:, "TOTAL_VACCINATIONS"] = df["TOTAL_VACCINATIONS"].fillna(np.nan)
         return df
