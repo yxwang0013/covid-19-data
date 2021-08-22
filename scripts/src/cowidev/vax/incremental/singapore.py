@@ -23,7 +23,7 @@ class Singapore:
                     return elem
 
     def read(self) -> pd.Series:
-        self.source_url = self.find_article(self.feed_url)
+        self.source_url = self.find_article()
         soup = get_soup(self.source_url)
         return self.parse_text(soup)
 
