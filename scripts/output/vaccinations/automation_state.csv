@@ -1,6 +1,7 @@
 location,automated
 Afghanistan,True
 Albania,True
+Algeria,True
 Andorra,True
 Angola,True
 Anguilla,True
@@ -189,7 +190,6 @@ Wallis and Futuna,True
 Yemen,True
 Zambia,True
 Zimbabwe,True
-Algeria,False
 Barbados,False
 Belize,False
 Bosnia and Herzegovina,False
